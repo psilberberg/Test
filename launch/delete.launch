@@ -1,0 +1,92 @@
+<?xml version='1.0'?>
+<launch>
+ 
+   <!-- start world -->
+  <arg name="model" default="$(find cscpp)/urdf/iris_accessories/iris.xacro"/>
+  <arg name="mav_name" default="iris" /> <!-- Choose the default UAV -->
+  <arg name="simRate" default="nan"/>
+  <!-- Enable simulation clock -->
+  <param name="use_sim_time" type="bool" value="true" />
+
+  <arg name="world_name" default="$(find f35sim)/worlds/F35_noiris.world" />
+  <arg name="gui" value="true" />
+  <arg name="headless" value="false" /> 
+
+  <arg name="enable_logging" default="false" />
+  <arg name="enable_ground_truth" default="true" />
+  <arg name="UAV_start_X" default="-7.0" />
+  <arg name="UAV_start_Y" default="0.0" />
+  <arg name="UAV_start_Z" default="3.0" />
+  <arg name="log_file" default="$(arg mav_name)" />
+
+  <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find f35sim)/models"/>
+
+<!--<env name="GAZEBO_MODEL_PATH" value="$(find drcsim_model_resources)/gazebo_models/environments:$(find ardupilot_sitl_gazebo_plugin)/meshes/meshes_sensors:$(find ardupilot_sitl_gazebo_plugin)/meshes/meshes_outdoor:$(find ardupilot_sitl_gazebo_plugin)/meshes/meshes_warehouse"/>
+-->
+  
+<group ns="$(arg mav_name)">   
+ 	<include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+            <arg name="mav_name" value="$(arg mav_name)" />
+            <arg name="model" value="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" />
+            <arg name="enable_logging" value="$(arg enable_logging)" />
+            <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+            <arg name="log_file" value="$(arg log_file)"/>
+            <arg name="x" default="$(arg UAV_start_X)"/>
+            <arg name="y" default="$(arg UAV_start_Y)"/>
+            <arg name="z" default="$(arg UAV_start_Z)"/>
+        </include>	
+
+	<!--<arg name="namespace" value="$(arg mav_name)"/>	
+	<arg name="enable_logging" default="true"/>
+        <arg name="enable_ground_truth" default="true"/>
+	<arg name="log_file" default="erlecopter1"/>
+	<include file="$(find mavros)/launch/apm_sitl.launch" >
+		<arg name="fcu_url" value="tcp://localhost:5760" />
+		<arg name="gcs_url" value="udp://:14550@" /> 
+		<arg name="tgt_system" value="1" />
+		<arg name="tgt_component" value="1" /> 
+	</include> 
+  	<arg name="name" default="iris"/>
+  	<arg name="model" default="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" />
+  	<arg name="tf_prefix" default="$(arg namespace)"/>
+  	<arg name="debug" default="true"/>
+  	<arg name="verbose" default="true"/> -->
+
+  <!-- Initial pose for the drone -->
+  	<arg name="x" default="0.0"/> <!-- [m], positive to the North -->
+  	<arg name="y" default="0.0"/> <!-- [m], negative to the East -->
+  	<arg name="z" default="0.08"/> <!-- [m], positive Up -->
+  	<arg name="roll" default="0"/> <!-- [rad] -->
+  	<arg name="pitch" default="0"/> <!-- [rad] -->
+  	<arg name="yaw" default="3.1415"/> <!-- [rad], negative clockwise -->
+
+  <!-- send the robot XML to param server -->
+  	<param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+  	<param name="tf_prefix" type="string" value="$(arg tf_prefix)" />
+	
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  	<node name="spawn_mav" pkg="gazebo_ros" type="spawn_model"
+   args="-param robot_description
+         -urdf
+         -x $(arg x)
+         -y $(arg y)
+         -z $(arg z)
+         -R $(arg roll)
+         -P $(arg pitch)
+         -Y $(arg yaw)
+         -model $(arg name)"
+   respawn="false" output="screen" >
+  	</node>	
+	<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen"/>
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" output="screen"/>
+</group> 
+
+
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="paused" value="true"/>  
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="world_name" value="$(arg world_name)"/>
+  </include>
+
+</launch>
